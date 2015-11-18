@@ -10,6 +10,7 @@ namespace StarcraftBotLib.BW
         public SWIG.BWAPI.Unit theUnit;
         public SWIG.BWAPI.Unit theTarget;
         public string Type { get; set; }
+        public bool Alive { get; set; }
         public int Id { get; set; }        
 
         public Unit(SWIG.BWAPI.Unit u)
@@ -17,6 +18,7 @@ namespace StarcraftBotLib.BW
             theUnit = u;
             Type = u.getType().getName();
             Id = u.getID();
+            Alive = true;
             theTarget = null;
         }
 

@@ -8,7 +8,7 @@ using System.IO;
 using System.Windows.Threading;
 using System.Threading.Tasks;
 using System.Threading;
-
+#pragma warning disable 4014
 namespace ClrAIModuleLoader
 {
     class BotLoaderException : Exception
@@ -175,6 +175,7 @@ namespace ClrAIModuleLoader
                     System.Console.WriteLine("Reconnecting...\n");
                     reconnect();
                   }
+                  await Task.Run(() => { });                  
                 }
                 System.Console.WriteLine("Game ended\n");
 

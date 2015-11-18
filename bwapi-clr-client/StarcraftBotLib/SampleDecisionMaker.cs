@@ -20,13 +20,13 @@ namespace StarcraftBotLib
         // Dictionary<string, int> buildingQueue = new Dictionary<string, int>();
         EconomicAI EcoAI { get; set; }
         
-        bool haltProduction = false;                       
+        // bool haltProduction = false;                       
         
 
         public SampleDecisionMaker()
         {            
             State = new GameState();
-            EcoAI = new EconomicAI();
+            EcoAI = new EconomicAI(State);
             AIState = new PreInitialize(State, EcoAI);            
         }        
 
@@ -35,7 +35,8 @@ namespace StarcraftBotLib
         public void onAnalysisComplete()
         {
             State.BaseLocations = SWIG.BWTA.bwta.getStartLocations().ToList();
-            State.analysis_complete = true;
+            State.analysis_complete = true;            
+            AIState.onAnalysisComplete();            
         }
 
         public void onfoundMinerals(BW.Unit unit)
@@ -54,12 +55,15 @@ namespace StarcraftBotLib
         public void onMyUnitCreated(Unit unit)
         {            
             var myunit = new BW.Unit(unit);
-            State.onMyUnitCreated(myunit);
-            if (myunit.Type == "Protoss Probe")
-            {
-                EcoAI.Probes.Add(myunit);
-            }
+            State.onMyUnitCreated(myunit);            
             AIState.onMyUnitCreated(myunit);            
+        }
+
+        public void onMyUnitMorph(Unit unit)
+        {
+            var myunit = new BW.Unit(unit);
+            // State.onMyUnitCreated(myunit);
+            AIState.onMyUnitMorph(myunit);
         }
 
         public void onMyUnitDestroyed(Unit unit)
@@ -71,13 +75,13 @@ namespace StarcraftBotLib
         public void onMyUnitCompleted(Unit unit)
         {
                 
-        }
-        #endregion                
-
-        public void newFrame()
-        {
-            AIState = AIState.Run();                        
         }        
-        
+
+        public void onNewFrame()
+        {
+            AIState = AIState.Run();
+        }
+        #endregion
+
     }
 }

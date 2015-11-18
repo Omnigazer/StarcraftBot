@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SWIG.BWAPI;
+using SWIG.BWTA;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,57 +9,113 @@ namespace StarcraftBotLib
 {
     public class EconomicAI : IAIModule
     {
-        public EconomicAI()
+        public EconomicAI(GameState state)
         {
-            Probes = new List<BW.Unit>();
-            InitialMinerals = new List<BW.Unit>();   
+            State = state;
+            BaseModules = new List<EcoBaseAI>();
+            Probes = new List<BW.Unit>();            
         }
+        // own units
         public List<BW.Unit> Probes { get; set; }
+        //
 
-        // one base
-        public List<BW.Unit> InitialMinerals { get; set; }
-        public int currentPatchIndex { get; set; }        
+        public GameState State { get; set; }
+        public List<EcoBaseAI> BaseModules { get; set; }
+        // config
+        public int bases = 1;
+        public int gases = 0;
+        //
 
-        public void Run()
+        //int required_probes()
+        //{
+        //    return bases * 20;
+        //}
+
+        public bool buildProbe(BW.Unit nexus)
         {
-            if (InitialMinerals.Any())
-            {                
-                foreach (var probe in getIdleProbes())
+            UnitType probe_type = bwapi.getUnitType("Protoss Probe");            
+            if (nexus != null)
+                return nexus.theUnit.train(probe_type);
+            return false;
+        }
+
+        public async void Run()
+        {
+            int gases_count = BaseModules.Count(x => x.with_gas);
+            int bases_w_o_gas = BaseModules.Count(x => !x.with_gas);            
+            if (gases_count < gases && bases_w_o_gas > 0)
+            {
+                int needed_gas = gases - gases_count;
+                foreach (var module in BaseModules.Where(x => !x.with_gas).Take(needed_gas))
                 {
-                    GatherNextMineral(probe);
+                    module.BuildGas();                    
                 }
             }
-        }
-
-        public BW.Unit YieldUnit()
-        {
-            return RequestProbe();
-        }
-
-        public BW.Unit RequestProbe()
-        {
-            if (Probes.Any())
+            else if (gases_count > gases)
             {
-                var probe = Probes.Where(x => x.theUnit.isCompleted()).Last();
-                Probes.Remove(probe);
-                return probe;
+                int excess_gas = gases_count - gases;
+                foreach (var module in BaseModules.Where(x => x.with_gas).Take(excess_gas))
+                {
+                    module.with_gas = false;
+                }
             }
-            else
+
+            foreach (var module in BaseModules)
             {
-                return null;
+                module.Run();
+            }            
+
+            if (BaseModules.Any())
+            {                
+                while (Probes.Where(x => x.theUnit.isCompleted()).Any())
+                {
+                    var probe = YieldUnit();                    
+                    BaseModules.OrderBy(x => x.Probes.Count()).First().ReceiveUnit(probe);                    
+                }                
             }
+            
+            if (State.getBuildingCount("Protoss Nexus") < bases)
+            {                
+                TilePosition pos = State.getUnit("Protoss Nexus").theUnit.getTilePosition();
+                // currently only natural
+                Position position = SWIG.BWTA.bwta.getNearestChokepoint(State.getUnit("Protoss Nexus").theUnit.getPosition()).getCenter();
+                BaseLocation expand_location = SWIG.BWTA.bwta.getNearestBaseLocation(position);
+                TilePosition tile_position = expand_location.getTilePosition();
+                var item = State.pushItem("Protoss Nexus", tile_position);
+                BW.Unit nexus = await item.buildingTask.Task;
+                var module = new EcoBaseAI(State, expand_location, nexus);
+                BaseModules.Add(module);
+            }            
         }
 
         public IEnumerable<BW.Unit> getIdleProbes()
         {
             return Probes.Where(x => x.theUnit.getOrder().getName() == "Stop" || x.theUnit.getOrder().getName() == "PlayerGuard");
-        }
+        }        
 
-        private void GatherNextMineral(BW.Unit unit)
+        public BW.Unit YieldUnit()
         {
-            unit.Gather(InitialMinerals[currentPatchIndex].theUnit);
-            currentPatchIndex = (currentPatchIndex + 1) % InitialMinerals.Count;
-        }
+            if (Probes.Where(x => x.theUnit.isCompleted()).Any())
+            {
+                var probe = Probes.Where(x => x.theUnit.isCompleted()).Last();
+                Probes.Remove(probe);
+                return probe;
+            }            
+            else
+            {
+                if (BaseModules.Any())
+                {
+                    BW.Unit unit = null;
+                    foreach (var module in BaseModules)
+                    {
+                        unit = module.YieldUnit();
+                        if (unit != null) break;
+                    }
+                    return unit;
+                }                                
+            }
+            return null;
+        }       
 
         public void ReceiveUnit(BW.Unit unit)
         {
@@ -69,6 +127,12 @@ namespace StarcraftBotLib
             {
                 throw new NotImplementedException("AI cannot receive non-Probe units");
             }
-        }        
+        }
+
+        public override string ToString()
+        {
+            return "Economic AI";
+        }
+
     }
 }

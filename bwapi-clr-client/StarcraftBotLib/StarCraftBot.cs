@@ -10,28 +10,22 @@ namespace StarcraftBotLib
     public class StarCraftBot : IStarcraftBot
     {
         SampleDecisionMaker DecisionMaker = new SampleDecisionMaker();        
-        List<Unit> enemies;        
-
         Terrain.Analyzer a;
-        bool analysisDone = false;
+        
         public void onStart()
         {
             Util.Logger.Instance.Log("Bot Started");
             Util.Logger.Instance.Log("Enabling User Input");
             bwapi.Broodwar.sendText("Mono StarcraftBot initialised");
-            bwapi.Broodwar.enableFlag(1);            
-
+            bwapi.Broodwar.enableFlag(1);     
             a = new Terrain.Analyzer();
-            a.Done += new EventHandler(a_Done);
-            a.Run();            
-            enemies = new List<Unit>();            
+            a.Done += a_Done;
+            a.Run();                             
         }
 
         void a_Done(object sender, EventArgs e)
         {
-            bwapi.Broodwar.printf("Terrain Analysis Complete");
             DecisionMaker.onAnalysisComplete();
-            analysisDone = true;            
         }        
 
         public void onEnd(bool isWinner)
@@ -55,7 +49,7 @@ namespace StarcraftBotLib
             } 
             */
             
-            DecisionMaker.newFrame();
+            DecisionMaker.onNewFrame();
         }
 
         public void onSendText(string text)
@@ -92,8 +86,7 @@ namespace StarcraftBotLib
         {
             if (unit.getPlayer().isEnemy(bwapi.Broodwar.self()))
             {
-                DecisionMaker.onEnemyShown(unit);
-                enemies.Add(unit);
+                DecisionMaker.onEnemyShown(unit);                
             }
             if (unit.getType().getName() == "Resource Mineral Field")
             {
@@ -101,7 +94,7 @@ namespace StarcraftBotLib
             }
             if (DecisionMaker.AIState.ToString() != "PreInitialize")
             {
-                PrintMessage("Unit Shown: [" + unit.getType().getName() + "] at [" + unit.getPosition().xConst() + "," + unit.getPosition().yConst() + "]");
+                // PrintMessage("Unit Shown: [" + unit.getType().getName() + "] at [" + unit.getPosition().xConst() + "," + unit.getPosition().yConst() + "]");
             }
         }
 
@@ -114,20 +107,18 @@ namespace StarcraftBotLib
                 bwapi.Broodwar.printf("Unit Hidden: [" + unit.getType().getName() + "] at [" + unit.getPosition().xConst() + "," + unit.getPosition().yConst() + "]");
             }
             */ 
-        }        
+        }
 
         public void onUnitCreate(Unit unit)
         {
-            
-                if (unit.getPlayer() == bwapi.Broodwar.self())
+            if (unit.getPlayer() == bwapi.Broodwar.self())
+            {
+                if (DecisionMaker.AIState.ToString() != "PreInitialize")
                 {
-                    if (DecisionMaker.AIState.ToString() != "PreInitialize")
-                    {
-                        PrintMessage("Unit Created: [" + unit.getType().getName() + "] at [" + unit.getPosition().xConst() + "," + unit.getPosition().yConst() + "]");
-                    }                    
-                    DecisionMaker.onMyUnitCreated(unit);
+                    // PrintMessage("Unit Created: [" + unit.getType().getName() + "] at [" + unit.getPosition().xConst() + "," + unit.getPosition().yConst() + "]");
                 }
-            
+                DecisionMaker.onMyUnitCreated(unit);
+            }
         }
 
         public void PrintMessage(string message)
@@ -146,7 +137,14 @@ namespace StarcraftBotLib
 
         public void onUnitMorph(Unit unit)
         {
-
+            if (unit.getPlayer() == bwapi.Broodwar.self())
+            {
+                if (DecisionMaker.AIState.ToString() != "PreInitialize")
+                {
+                    // PrintMessage("Unit Created: [" + unit.getType().getName() + "] at [" + unit.getPosition().xConst() + "," + unit.getPosition().yConst() + "]");
+                }
+                DecisionMaker.onMyUnitMorph(unit);
+            }
         }
 
         public void onUnitRenegade(Unit unit)
@@ -166,12 +164,12 @@ namespace StarcraftBotLib
             {
                 if (DecisionMaker.AIState.ToString() != "PreInitialize")
                 {
-                    PrintMessage("Unit Completed: [" + unit.getType().getName() + "] at [" + unit.getPosition().xConst() + "," + unit.getPosition().yConst() + "]");
+                    // PrintMessage("Unit Completed: [" + unit.getType().getName() + "] at [" + unit.getPosition().xConst() + "," + unit.getPosition().yConst() + "]");
                 }
                 DecisionMaker.onMyUnitCompleted(unit);
             }
             var actual_type = unit.getType();
-            Console.WriteLine(actual_type.getName());
+            // Console.WriteLine(actual_type.getName());
         }
     }
 }

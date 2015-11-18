@@ -27,6 +27,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -56,10 +57,15 @@
   <ItemGroup>
     <Compile Include="BuildingQueueItem.cs" />
     <Compile Include="BW\Unit.cs" />
+    <Compile Include="CustomTypes\Direction.cs" />
+    <Compile Include="CustomTypes\NullableDictionary.cs" />
     <Compile Include="DecisionMaker.cs" />
     <Compile Include="EarlyStage.cs" />
+    <Compile Include="EcoBaseAI.cs" />
+    <Compile Include="ForgeExpand.cs" />
     <Compile Include="GameState.cs" />
     <Compile Include="AIState.cs" />
+    <Compile Include="MapHelper.cs" />
     <Compile Include="MassZealots.cs" />
     <Compile Include="PreInitialize.cs" />
     <Compile Include="SampleDecisionMaker.cs" />
@@ -70,6 +76,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Terrain\Analyzer.cs" />
     <Compile Include="UnitArgs.cs" />
+    <Compile Include="UType.cs" />
     <Compile Include="Util\Logger.cs" />
   </ItemGroup>
   <ItemGroup>

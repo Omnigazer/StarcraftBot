@@ -10,8 +10,7 @@ namespace StarcraftBotLib.Terrain
 {
     class Analyzer
     {
-        public event EventHandler Done;
-        BackgroundWorker bwBWTA;
+        public event EventHandler Done;        
 
         public Analyzer()
         {
@@ -27,13 +26,13 @@ namespace StarcraftBotLib.Terrain
             bwBWTA.DoWork += new DoWorkEventHandler(bwBWTA_DoWork);
             bwBWTA.RunWorkerAsync();
             */
-            (new Thread(() =>
-            {
+            //(new Thread(() =>
+            //{
                 Util.Logger.Instance.Log("BWTA Terrain analysis Started");
                 bwta.analyze();
                 Util.Logger.Instance.Log("BWTA Terrain analysis Completed");
                 Done(this, EventArgs.Empty);
-            })).Start();            
+            //})).Start();            
         }
 
         void bwBWTA_DoWork(object sender, DoWorkEventArgs e)

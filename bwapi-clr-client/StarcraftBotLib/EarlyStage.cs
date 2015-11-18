@@ -3,38 +3,30 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
+#pragma warning disable 4014
 namespace StarcraftBotLib
 {
     class EarlyStage : AIState
     {
-        public EarlyStage(GameState state, EconomicAI eco_ai) : base(state, eco_ai) { }        
-        
-        public bool haltProduction = false;        
+        public EarlyStage(GameState state, EconomicAI eco_ai) : base(state, eco_ai) { }
+
+        public bool haltProduction = false;
         public override AIState Run()
         {
-            Scout();
-            if (!haltProduction)
-            {
-                produceProbes();
-            }
-            // Nominal supply should account for unstarted pylons
             if (State.freeSupply() <= ProductionCapacity && State.freeMinerals() >= 100)
             {
-                //waitingForPylon = !buildPylon();
-                var chokepoint = SWIG.BWTA.bwta.getNearestChokepoint(State.getUnit("Protoss Nexus").theUnit.getPosition());
-                if (chokepoint != null)
+                // var chokepoint = SWIG.BWTA.bwta.getNearestChokepoint(State.getUnit("Protoss Nexus").theUnit.getPosition());
+                var position = MapHelper.getMainToChokePosition();
+                if (State.analysis_complete && position != null)
                 {
                     bwapi.Broodwar.printf("Chokepoint found");
-                    Position position = chokepoint.getCenter();
-                    State.pushItem("Protoss Pylon", position);
-                    buildPylon(position);        
+                    // Position position = chokepoint.getCenter();
+                    State.pushItem("Protoss Pylon", new TilePosition(position));
                 }
                 else
                 {
                     bwapi.Broodwar.printf("Chokepoint not found");
                     State.pushItem("Protoss Pylon");
-                    buildPylon();
                 }
 
             }
@@ -45,54 +37,31 @@ namespace StarcraftBotLib
             }
             if (State.usedSupply() >= 10)
             {
-                State.gatewaysCount = 1;
+                Scout();
+                // State.gatewaysCount = 1;
+                requiredBuildings["Protoss Gateway"] = 1;
             }
             if (State.usedSupply() >= 12)
             {
-                State.gatewaysCount = 2;
+                // State.gatewaysCount = 2;
+                requiredBuildings["Protoss Gateway"] = 2;
             }
-            if (State.getBuildingCount("Protoss Gateway") < State.gatewaysCount)
+            if (State.getBuildingCount("Protoss Gateway") < requiredBuildings["Protoss Gateway"])
             {
-                if (buildGateway())
-                    State.pushItem("Protoss Gateway");
-            }            
+                State.pushItem("Protoss Gateway");
+            }
 
-            if (State.buildingQueue.Any())
-            {
-                if (getBuildingProbe() != null && getBuildingProbe().theUnit.getOrder().getName() != "PlaceBuilding" && getBuildingProbe().theUnit.getOrder().getName() != "Move")
-                {
-                    var item = State.buildingQueue.First();
-                    switch (item.Type)
-                    {
-                        case "Protoss Pylon":
-                            {
-                                buildPylon(item.Position);                                    
-                                break;
-                            }
-                        case "Protoss Gateway":
-                            {
-                                buildGateway();
-                                break;
-                            }
-                    }
-                }
-            }            
+            base.Run();
             if (State.workerSupply() >= 20)
             {
                 return new MassZealots(State, EcoAI);
             }
-            base.Run();
             return this;
         }
 
         public override void onMyUnitCreated(BW.Unit unit)
-        {
-            if (unit.theUnit.getType().isBuilding())
-            {
-                State.popItem(unit.theUnit.getType(), unit.theUnit.getPosition());
-                transferUnitTo(getBuildingProbe(), EcoAI);
-                buildingProbeId = 0;
-            }
+        {            
+            base.onMyUnitCreated(unit);
         }
     }
 }

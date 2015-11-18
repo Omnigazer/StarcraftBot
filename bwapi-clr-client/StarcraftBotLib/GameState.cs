@@ -11,8 +11,14 @@ namespace StarcraftBotLib
         public List<SWIG.BWTA.BaseLocation> BaseLocations { get; set; }
         public List<BW.Unit> myUnits = new List<BW.Unit>();
         public List<BuildingQueueItem> buildingQueue = new List<BuildingQueueItem>();
-        public int gatewaysCount = 0;
+        // Move to AI
+        // public int gatewaysCount = 0;
+        // public int forgeCount = 0;
+        // public int cannonCount = 0;
+        //
         public bool analysis_complete = false;
+        // shared info for all ai states, forwarded here temporarily
+        public Position enemy_position;
 
         //  Events
         public event EventHandler<UnitArgs> myUnitCreated = delegate { };
@@ -63,7 +69,7 @@ namespace StarcraftBotLib
 
         public int workerSupply()
         {
-            return myUnits.Where(x => x.Type == "Protoss Probe").Count();
+            return myUnits.Where(x => x.Alive && x.Type == "Protoss Probe").Count();
         }
 
         public int usedSupply()
@@ -81,27 +87,31 @@ namespace StarcraftBotLib
             return myUnits.Find(x => x.Type == type);
         }
 
-        public int getBuildingCount(string type, bool with_enqueued = true)
+        public IEnumerable<BW.Unit> getUnits(string type)
         {
-            return myUnits.Where(unit => unit.Type == type).Count() + (with_enqueued ? buildingQueue.Where(item => item.Type == type).Count() : 0);
+            return myUnits.Where(x => x.Type == type);
+        }
+
+        public BW.Unit getPylonClosestTo(Position position)
+        {
+            return myUnits.Where(x => x.Alive && x.Type == "Protoss Pylon").OrderBy(x => x.theUnit.getDistance(position)).First();
+        }
+
+        public int getBuildingCount(string type, bool with_enqueued = true, bool completed = false)
+        {
+            return myUnits.Where(unit => (unit.Type == type) && (completed ? unit.theUnit.isCompleted() : true)).Count() + (with_enqueued ? buildingQueue.Where(item => item.Type == type).Count() : 0);
         }
 
         public void pushItem(string type_name)
         {
-            buildingQueue.Add(new BuildingQueueItem()
-            {
-                Type = type_name,
-                Position = getUnit("Protoss Nexus").theUnit.getPosition()
-            });
+            buildingQueue.Add(new BuildingQueueItem(type_name, getUnit("Protoss Nexus").theUnit.getTilePosition()));
         }
 
-        public void pushItem(string type_name, Position position)
+        public BuildingQueueItem pushItem(string type_name, TilePosition tile_position)
         {
-            buildingQueue.Add(new BuildingQueueItem()
-            {
-                Type = type_name,
-                Position = position
-            });
+            var item = new BuildingQueueItem(type_name, tile_position);
+            buildingQueue.Add(item);
+            return item;
         }
 
         public void pushItem(UnitType type)
@@ -110,12 +120,10 @@ namespace StarcraftBotLib
             pushItem(type_name);
         }
 
-        public void popItem(UnitType type, Position position)
-        {
-            string type_name = type.getName();
-            // !!!
-
-            buildingQueue.Remove(buildingQueue.Where(x => x.Type == type.getName()).OrderBy(x => x.Position.getDistance(position)).First());
+        // public void popItem(UnitType type, TilePosition position)
+        public void popItem(BuildingQueueItem item)
+        {           
+            buildingQueue.Remove(item);
         }        
     }
 }
